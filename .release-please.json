@@ -2,6 +2,7 @@
   "plugins": ["node-workspace"],
   "packages": {
     "packages/helia": {},
+    "packages/http": {},
     "packages/interface": {},
     "packages/interop": {}
   }
