@@ -24,6 +24,7 @@ import { MemoryDatastore } from 'datastore-core'
 import { HeliaHTTPImpl } from './helia-http.js'
 import type { Helia } from '@helia/interface'
 import type { BlockBroker } from '@helia/interface/blocks'
+import type { ComponentLogger } from '@libp2p/interface'
 import type { Blockstore } from 'interface-blockstore'
 import type { Datastore } from 'interface-datastore'
 import type { CID } from 'multiformats/cid'
@@ -78,6 +79,11 @@ export interface HeliaHTTPInit {
   blockBrokers?: Array<(components: any) => BlockBroker>
 
   /**
+   * Pass `false` to not start the Helia node
+   */
+    start?: boolean
+
+  /**
    * Garbage collection requires preventing blockstore writes during searches
    * for unpinned blocks as DAGs are typically pinned after they've been
    * imported - without locking this could lead to the deletion of blocks while
@@ -93,6 +99,12 @@ export interface HeliaHTTPInit {
    * webworker), pass true here to hold the gc lock in this process.
    */
   holdGcLock?: boolean
+
+  /**
+   * An optional logging component to pass to libp2p. If not specified the
+   * default implementation from libp2p will be used.
+   */
+  logger?: ComponentLogger
 }
 
 /**
@@ -109,6 +121,10 @@ export async function createHeliaHTTP (init: HeliaHTTPInit = {}): Promise<Helia<
     datastore,
     blockstore
   })
+
+  if (init.start !== false) {
+    await helia.start()
+  }
 
   return helia
 }

@@ -44,8 +44,5 @@
   "type": "module",
   "workspaces": [
     "packages/*"
-  ],
-  "dependencies": {
-    "helia": "^2.1.0"
-  }
+  ]
 }

@@ -33,7 +33,7 @@ fs.cat(CID.parse('bafyFoo'))
 ## Install
 
 ```console
-$ npm i helia
+$ npm i @helia/http
 ```
 
 ### Browser `<script>` tag

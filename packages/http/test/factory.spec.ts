@@ -1,5 +1,7 @@
 /* eslint-env mocha */
 
+// TODO(DJ): TESTS HAVE NOT BEEN UPDATED
+
 import { identify } from '@libp2p/identify'
 import { webSockets } from '@libp2p/websockets'
 import { expect } from 'aegir/chai'
@@ -7,8 +9,8 @@ import { MemoryDatastore } from 'datastore-core'
 import { Key } from 'interface-datastore'
 import { createLibp2p } from 'libp2p'
 import { CID } from 'multiformats/cid'
-import { createHelia } from '../src/index.js'
-import type { Helia } from '@helia/interface'
+import { createHeliaHTTP } from '../src/index.js'
+import type { HeliaHTTP } from '@helia/interface'
 
 describe('helia factory', () => {
   let helia: Helia

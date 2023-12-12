@@ -3,47 +3,45 @@
 import * as dagCbor from '@ipld/dag-cbor'
 import * as dagJson from '@ipld/dag-json'
 import * as dagPb from '@ipld/dag-pb'
-import { multiaddr } from '@multiformats/multiaddr'
 import { expect } from 'aegir/chai'
 import all from 'it-all'
 import { CID } from 'multiformats/cid'
 import * as json from 'multiformats/codecs/json'
 import * as raw from 'multiformats/codecs/raw'
 import { createAndPutBlock } from './fixtures/create-block.js'
-// TODO ADJUST create-helia
-import { createHelia } from './fixtures/create-helia.js'
-import type { Helia } from '@helia/interface'
+import { createHeliaHTTP } from './fixtures/create-helia-http.js'
+import type { HeliaHTTP } from '@helia/interface'
 import type { ProgressEvent } from 'progress-events'
 
 describe('pins', () => {
-  let helia: Helia
+  let heliaHTTP: HeliaHTTP
 
   beforeEach(async () => {
-    helia = await createHelia()
+    heliaHTTP = await createHelia()
   })
 
   afterEach(async () => {
-    if (helia != null) {
-      await helia.stop()
+    if (heliaHTTP != null) {
+      await heliaHTTP.stop()
     }
   })
 
   it('pins a block', async () => {
-    const cidV1 = await createAndPutBlock(raw.code, Uint8Array.from([0, 1, 2, 3]), helia.blockstore)
+    const cidV1 = await createAndPutBlock(raw.code, Uint8Array.from([0, 1, 2, 3]), heliaHTTP.blockstore)
     const cidV0 = CID.createV0(cidV1.multihash)
 
-    await helia.pins.add(cidV1)
+    await heliaHTTP.pins.add(cidV1)
 
-    await expect(helia.pins.isPinned(cidV1)).to.eventually.be.true('did not pin v1 CID')
-    await expect(helia.pins.isPinned(cidV0)).to.eventually.be.true('did not pin v0 CID')
+    await expect(heliaHTTP.pins.isPinned(cidV1)).to.eventually.be.true('did not pin v1 CID')
+    await expect(heliaHTTP.pins.isPinned(cidV0)).to.eventually.be.true('did not pin v0 CID')
   })
 
   it('pins a block with progress events', async () => {
-    const cidV1 = await createAndPutBlock(raw.code, Uint8Array.from([0, 1, 2, 3]), helia.blockstore)
+    const cidV1 = await createAndPutBlock(raw.code, Uint8Array.from([0, 1, 2, 3]), heliaHTTP.blockstore)
 
     const events: ProgressEvent[] = []
 
-    await helia.pins.add(cidV1, {
+    await heliaHTTP.pins.add(cidV1, {
       onProgress: (evt) => {
         events.push(evt)
       }
@@ -59,32 +57,32 @@ describe('pins', () => {
     const cidV1 = await createAndPutBlock(raw.code, Uint8Array.from([0, 1, 2, 3]), helia.blockstore)
     const cidV0 = CID.createV0(cidV1.multihash)
 
-    await helia.pins.add(cidV1)
+    await heliaHTTP.pins.add(cidV1)
 
-    await expect(helia.pins.isPinned(cidV1)).to.eventually.be.true('did not pin v1 CID')
-    await expect(helia.pins.isPinned(cidV0)).to.eventually.be.true('did not pin v0 CID')
+    await expect(heliaHTTP.pins.isPinned(cidV1)).to.eventually.be.true('did not pin v1 CID')
+    await expect(heliaHTTP.pins.isPinned(cidV0)).to.eventually.be.true('did not pin v0 CID')
 
-    await helia.pins.rm(cidV1)
+    await heliaHTTP.pins.rm(cidV1)
 
-    await expect(helia.pins.isPinned(cidV1)).to.eventually.be.false('did not unpin v1 CID')
-    await expect(helia.pins.isPinned(cidV0)).to.eventually.be.false('did not unpin v0 CID')
+    await expect(heliaHTTP.pins.isPinned(cidV1)).to.eventually.be.false('did not unpin v1 CID')
+    await expect(heliaHTTP.pins.isPinned(cidV0)).to.eventually.be.false('did not unpin v0 CID')
   })
 
   it('does not delete a pinned block', async () => {
-    const cid = await createAndPutBlock(raw.code, Uint8Array.from([0, 1, 2, 3]), helia.blockstore)
+    const cid = await createAndPutBlock(raw.code, Uint8Array.from([0, 1, 2, 3]), heliaHTTP.blockstore)
 
-    await helia.pins.add(cid)
+    await heliaHTTP.pins.add(cid)
 
-    await expect(helia.blockstore.delete(cid)).to.eventually.be.rejected
+    await expect(heliaHTTP.blockstore.delete(cid)).to.eventually.be.rejected
       .with.property('message', 'CID was pinned')
   })
 
   it('lists pins created with default args', async () => {
     const cidV1 = await createAndPutBlock(raw.code, Uint8Array.from([0, 1, 2, 3]), helia.blockstore)
 
-    await helia.pins.add(cidV1)
+    await heliaHTTP.pins.add(cidV1)
 
-    const pins = await all(helia.pins.ls())
+    const pins = await all(heliaHTTP.pins.ls())
 
     expect(pins).to.have.lengthOf(1)
     expect(pins).to.have.nested.property('[0].cid').that.eql(cidV1)
@@ -93,13 +91,13 @@ describe('pins', () => {
   })
 
   it('lists pins with depth', async () => {
-    const cidV1 = await createAndPutBlock(raw.code, Uint8Array.from([0, 1, 2, 3]), helia.blockstore)
+    const cidV1 = await createAndPutBlock(raw.code, Uint8Array.from([0, 1, 2, 3]), heliaHTTP.blockstore)
 
     await helia.pins.add(cidV1, {
       depth: 5
     })
 
-    const pins = await all(helia.pins.ls())
+    const pins = await all(heliaHTTP.pins.ls())
 
     expect(pins).to.have.lengthOf(1)
     expect(pins).to.have.nested.property('[0].cid').that.eql(cidV1)
@@ -107,18 +105,18 @@ describe('pins', () => {
   })
 
   it('lists pins with metadata', async () => {
-    const cidV1 = await createAndPutBlock(raw.code, Uint8Array.from([0, 1, 2, 3]), helia.blockstore)
+    const cidV1 = await createAndPutBlock(raw.code, Uint8Array.from([0, 1, 2, 3]), heliaHTTP.blockstore)
     const metadata = {
       foo: 'bar',
       baz: 5,
       qux: false
     }
 
-    await helia.pins.add(cidV1, {
+    await heliaHTTP.pins.add(cidV1, {
       metadata
     })
 
-    const pins = await all(helia.pins.ls())
+    const pins = await all(heliaHTTP.pins.ls())
 
     expect(pins).to.have.lengthOf(1)
     expect(pins).to.have.nested.property('[0].cid').that.eql(cidV1)
@@ -126,13 +124,13 @@ describe('pins', () => {
   })
 
   it('lists pins directly', async () => {
-    const cid1 = await createAndPutBlock(raw.code, Uint8Array.from([0, 1, 2, 3]), helia.blockstore)
-    const cid2 = await createAndPutBlock(raw.code, Uint8Array.from([4, 5, 6, 7]), helia.blockstore)
+    const cid1 = await createAndPutBlock(raw.code, Uint8Array.from([0, 1, 2, 3]), heliaHTTP.blockstore)
+    const cid2 = await createAndPutBlock(raw.code, Uint8Array.from([4, 5, 6, 7]), heliaHTTP.blockstore)
 
-    await helia.pins.add(cid1)
-    await helia.pins.add(cid2)
+    await heliaHTTP.pins.add(cid1)
+    await heliaHTTP.pins.add(cid2)
 
-    const pins = await all(helia.pins.ls({
+    const pins = await all(heliaHTTP.pins.ls({
       cid: cid1
     }))
 
@@ -142,25 +140,12 @@ describe('pins', () => {
     expect(pins).to.have.nested.property('[0].metadata').that.eql({})
   })
 
-  it('pins a block from another node', async () => {
-    const cid = CID.parse(process.env.BLOCK_CID ?? '')
-    await helia.libp2p.dial(multiaddr(process.env.RELAY_SERVER))
-    await helia.pins.add(cid)
-
-    const pins = await all(helia.pins.ls())
-
-    expect(pins).to.have.lengthOf(1)
-    expect(pins).to.have.nested.property('[0].cid').that.eql(cid)
-    expect(pins).to.have.nested.property('[0].depth', Infinity)
-    expect(pins).to.have.nested.property('[0].metadata').that.eql({})
-  })
-
   it('pins a json block', async () => {
-    const cid1 = await createAndPutBlock(json.code, json.encode({ hello: 'world' }), helia.blockstore)
+    const cid1 = await createAndPutBlock(json.code, json.encode({ hello: 'world' }), heliaHTTP.blockstore)
 
-    await helia.pins.add(cid1)
+    await heliaHTTP.pins.add(cid1)
 
-    const pins = await all(helia.pins.ls())
+    const pins = await all(heliaHTTP.pins.ls())
 
     expect(pins).to.have.lengthOf(1)
     expect(pins).to.have.nested.property('[0].cid').that.eql(cid1)
@@ -169,53 +154,53 @@ describe('pins', () => {
   })
 
   it('pins a dag-json block', async () => {
-    const cid1 = await createAndPutBlock(dagJson.code, dagJson.encode({ hello: 'world' }), helia.blockstore)
-    const cid2 = await createAndPutBlock(dagJson.code, dagJson.encode({ hello: 'world', linked: cid1 }), helia.blockstore)
+    const cid1 = await createAndPutBlock(dagJson.code, dagJson.encode({ hello: 'world' }), heliaHTTP.blockstore)
+    const cid2 = await createAndPutBlock(dagJson.code, dagJson.encode({ hello: 'world', linked: cid1 }), heliaHTTP.blockstore)
 
-    await helia.pins.add(cid2)
+    await heliaHTTP.pins.add(cid2)
 
-    const pins = await all(helia.pins.ls())
+    const pins = await all(heliaHTTP.pins.ls())
 
     expect(pins).to.have.lengthOf(1)
     expect(pins).to.have.nested.property('[0].cid').that.eql(cid2)
     expect(pins).to.have.nested.property('[0].depth', Infinity)
     expect(pins).to.have.nested.property('[0].metadata').that.eql({})
 
-    await expect(helia.pins.isPinned(cid1)).to.eventually.be.true()
-    await expect(helia.pins.isPinned(cid2)).to.eventually.be.true()
+    await expect(heliaHTTP.pins.isPinned(cid1)).to.eventually.be.true()
+    await expect(heliaHTTP.pins.isPinned(cid2)).to.eventually.be.true()
   })
 
   it('pins a dag-cbor block', async () => {
-    const cid1 = await createAndPutBlock(dagCbor.code, dagCbor.encode({ hello: 'world' }), helia.blockstore)
-    const cid2 = await createAndPutBlock(dagCbor.code, dagCbor.encode({ hello: 'world', linked: cid1 }), helia.blockstore)
+    const cid1 = await createAndPutBlock(dagCbor.code, dagCbor.encode({ hello: 'world' }), heliaHTTP.blockstore)
+    const cid2 = await createAndPutBlock(dagCbor.code, dagCbor.encode({ hello: 'world', linked: cid1 }), heliaHTTP.blockstore)
 
-    await helia.pins.add(cid2)
+    await heliaHTTP.pins.add(cid2)
 
-    const pins = await all(helia.pins.ls())
+    const pins = await all(heliaHTTP.pins.ls())
 
     expect(pins).to.have.lengthOf(1)
     expect(pins).to.have.nested.property('[0].cid').that.eql(cid2)
     expect(pins).to.have.nested.property('[0].depth', Infinity)
     expect(pins).to.have.nested.property('[0].metadata').that.eql({})
 
-    await expect(helia.pins.isPinned(cid1)).to.eventually.be.true()
-    await expect(helia.pins.isPinned(cid2)).to.eventually.be.true()
+    await expect(heliaHTTP.pins.isPinned(cid1)).to.eventually.be.true()
+    await expect(heliaHTTP.pins.isPinned(cid2)).to.eventually.be.true()
   })
 
   it('pins a dag-pb block', async () => {
-    const cid1 = await createAndPutBlock(dagPb.code, dagPb.encode({ Data: Uint8Array.from([0, 1, 2, 3, 4]), Links: [] }), helia.blockstore)
-    const cid2 = await createAndPutBlock(dagPb.code, dagPb.encode({ Links: [{ Name: '', Hash: cid1, Tsize: 100 }] }), helia.blockstore)
+    const cid1 = await createAndPutBlock(dagPb.code, dagPb.encode({ Data: Uint8Array.from([0, 1, 2, 3, 4]), Links: [] }), heliaHTTP.blockstore)
+    const cid2 = await createAndPutBlock(dagPb.code, dagPb.encode({ Links: [{ Name: '', Hash: cid1, Tsize: 100 }] }), heliaHTTP.blockstore)
 
-    await helia.pins.add(cid2)
+    await heliaHTTP.pins.add(cid2)
 
-    const pins = await all(helia.pins.ls())
+    const pins = await all(heliaHTTP.pins.ls())
 
     expect(pins).to.have.lengthOf(1)
     expect(pins).to.have.nested.property('[0].cid').that.eql(cid2)
     expect(pins).to.have.nested.property('[0].depth', Infinity)
     expect(pins).to.have.nested.property('[0].metadata').that.eql({})
 
-    await expect(helia.pins.isPinned(cid1)).to.eventually.be.true()
-    await expect(helia.pins.isPinned(cid2)).to.eventually.be.true()
+    await expect(heliaHTTP.pins.isPinned(cid1)).to.eventually.be.true()
+    await expect(heliaHTTP.pins.isPinned(cid2)).to.eventually.be.true()
   })
 })

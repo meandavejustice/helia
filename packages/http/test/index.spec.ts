@@ -1,47 +1,46 @@
 /* eslint-env mocha */
-import { noise } from '@chainsafe/libp2p-noise'
-import { yamux } from '@chainsafe/libp2p-yamux'
-import { webSockets } from '@libp2p/websockets'
+
 import { expect } from 'aegir/chai'
 import { MemoryBlockstore } from 'blockstore-core'
 import { MemoryDatastore } from 'datastore-core'
-import { createLibp2p } from 'libp2p'
 import { createHeliaHTTP } from '../src/index.js'
-import type { Helia } from '@helia/interface'
+import type { HeliaHTTP } from '@helia/interface'
 
 describe('helia', () => {
-  let helia: Helia
+  let heliaHTTP: HeliaHTTP
 
   beforeEach(async () => {
-    helia = await createHeliaHTTP({
+    heliaHTTP = await createHeliaHTTP({
       datastore: new MemoryDatastore(),
       blockstore: new MemoryBlockstore()
     })
   })
 
   afterEach(async () => {
-    if (helia != null) {
-      await helia.stop()
+    if (heliaHTTP != null) {
+      await heliaHTTP.stop()
     }
   })
 
   it('stops and starts', async () => {
-    expect(helia.libp2p.status).to.equal('started')
+    // TODO(DJ: Find another way to check these states
 
-    await helia.stop()
+    expect(heliaHTTP.libp2p.status).to.equal('started')
 
-    expect(helia.libp2p.status).to.equal('stopped')
+    await heliaHTTP.stop()
+
+    expect(heliaHTTP.libp2p.status).to.equal('stopped')
   })
 
   it('should have a blockstore', async () => {
-    expect(helia).to.have.property('blockstore').that.is.ok()
+    expect(heliaHTTP).to.have.property('blockstore').that.is.ok()
   })
 
   it('should have a datastore', async () => {
-    expect(helia).to.have.property('datastore').that.is.ok()
+    expect(heliaHTTP).to.have.property('datastore').that.is.ok()
   })
 
-  it('should have a libp2p', async () => {
-    expect(helia).to.have.property('libp2p').that.is.ok()
+  it('should have not a libp2p', async () => {
+    expect(heliaHTTP).to.have.property('libp2p').that.is.not.ok()
   })
 })
