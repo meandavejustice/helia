@@ -54,6 +54,10 @@
     "./pins": {
       "types": "./dist/src/pins.d.ts",
       "import": "./dist/src/pins.js"
+    },
+    "./http": {
+      "types": "./dist/src/http.d.ts",
+      "import": "./dist/src/http.js"
     }
   },
   "eslintConfig": {
